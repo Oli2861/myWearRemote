@@ -26,14 +26,14 @@ fun MediaControls(
         action = ControlAction.VOLUME_UP,
         icon = R.drawable.baseline_volume_up_24,
         onClick = controlsViewModel::volumeUp,
-        controlsViewModel.volumeRequestState
+        controlsViewModel.volumeUpRequestState
     )
 
     val volumeDown = Control(
         action = ControlAction.VOLUME_DOWN,
         icon = R.drawable.baseline_volume_down_24,
         onClick = controlsViewModel::volumeDown,
-        controlsViewModel.volumeRequestState
+        controlsViewModel.volumeDownRequestState
     )
 
     val togglePlay = Control(

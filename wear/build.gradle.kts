@@ -9,7 +9,7 @@ android {
 
     defaultConfig {
         applicationId = "com.oli.mywearremote"
-        minSdk = 30
+        minSdk = 33
         targetSdk = 33
         versionCode = 1
         versionName = "1.0"
@@ -49,6 +49,8 @@ android {
 }
 
 dependencies {
+    implementation("org.jmdns:jmdns:3.5.8")
+
     // Koin
     implementation("io.insert-koin:koin-androidx-compose:3.3.0")
     // Retrofit

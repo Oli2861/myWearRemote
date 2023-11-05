@@ -1,8 +1,13 @@
 package com.oli.mywearremote.network
 
 import android.content.Context
+import android.util.Log
 import com.oli.mywearremote.R
+import okhttp3.HttpUrl
+import okhttp3.HttpUrl.Companion.toHttpUrl
+import okhttp3.Interceptor
 import okhttp3.OkHttpClient
+import okhttp3.Request
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Response
 import retrofit2.Retrofit
@@ -17,11 +22,20 @@ import javax.net.ssl.SSLContext
 import javax.net.ssl.TrustManagerFactory
 import javax.net.ssl.X509TrustManager
 
-object RetrofitHelper {
-    private const val baseUrl: String = "https://192.168.0.178:5000/"
+class RetrofitHelper(
+    private val urlInterceptor: UrlInterceptor
+) {
+    fun getMediaControlsAPI(context: Context): MediaControlsAPI {
+        return getRetrofitInstance(context).create(MediaControlsAPI::class.java)
+    }
 
-    fun getRetrofitInstance(context: Context): Retrofit {
-        return Retrofit.Builder().baseUrl(baseUrl)
+    fun getNavigationControlsAPI(context: Context): NavigationControlsAPI {
+        return getRetrofitInstance(context).create(NavigationControlsAPI::class.java)
+    }
+
+    private fun getRetrofitInstance(context: Context): Retrofit {
+        return Retrofit.Builder()
+            .baseUrl("https://localhost/")
             .addConverterFactory(GsonConverterFactory.create())
             .client(getHTTPClient(context))
             .build()
@@ -37,6 +51,7 @@ object RetrofitHelper {
                 trustManagerFactory.trustManagers.first { it is X509TrustManager } as X509TrustManager)
             .hostnameVerifier(HostnameVerifier { _, _ -> true })
             .addInterceptor(loggingInterceptor)
+            .addInterceptor(urlInterceptor)
             .build()
     }
 
@@ -62,6 +77,44 @@ object RetrofitHelper {
         val sslContext = SSLContext.getInstance("TLS")
         sslContext.init(null, trustManagerFactory.trustManagers, null)
         return Pair(sslContext, trustManagerFactory)
+    }
+
+}
+
+class UrlInterceptor(
+    private val serverResolver: ServerResolver
+) : Interceptor {
+
+    /**
+     * Replace the base-url with the first available server address.
+     * Append the original path to the new base-url.
+     * @param chain Original request chain.
+     * @return The server response.
+     */
+    override fun intercept(chain: Interceptor.Chain): okhttp3.Response {
+        val url = serverResolver.availableServerAddresses.firstOrNull()
+
+        url?.let {
+            val request = chain.request()
+            val path = request.url.encodedPath
+
+            val newUrl: HttpUrl = url
+                .toHttpUrl()
+                .newBuilder(path)
+                ?.build()
+                ?: return@intercept chain.proceed(chain.request())
+
+            val newRequest: Request = request
+                .newBuilder()
+                .url(newUrl)
+                .build()
+
+            Log.d("UrlInterceptor", "Replace url with $url")
+            return@intercept chain.proceed(newRequest)
+        }
+
+        Log.d("UrlInterceptor", "No url found. Proceed with original request")
+        return chain.proceed(chain.request())
     }
 
 }

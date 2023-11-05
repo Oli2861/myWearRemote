@@ -1,11 +1,17 @@
 package com.oli.mywearremote.network
 
+import androidx.annotation.RequiresApi
+
 class ActionClient(
     private val mediaControlsAPI: MediaControlsAPI,
-    private val navigationControlsAPI: NavigationControlsAPI
+    private val navigationControlsAPI: NavigationControlsAPI,
+    private val serverResolver: ServerResolver
 ) {
 
+    @RequiresApi(34)
     suspend fun requestAction(controlAction: ControlAction): Boolean {
+        serverResolver.searchServer()
+
         return try {
             when (controlAction) {
                 ControlAction.VOLUME_UP -> mediaControlsAPI.volumeUp().isSuccessful
